@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor's Prescription</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .advice-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .advice-card:hover { transform: scale(1.05); }
+        .advice-card.correct { opacity: 0; pointer-events: none; transform: scale(0.8); }
+        .advice-card.wrong { border-color: #ef4444 !important; animation: shake 0.4s ease-in-out; }
+        .hint-active { box-shadow: 0 0 20px 5px rgba(234, 179, 8, 0.6); border-color: #eab308 !important; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        .counter-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 999px;
+            font-weight: 900;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <script>
+        const healthDatabase = [
+            { id: 1, name: 'Running Nose', img: 'running_nose.png', should: ['nosal_spray.png', 'tissure.png'] },
+            { id: 2, name: 'Rash', img: 'rash_mosqiuto_bites.png', should: ['ointment.jpg', 'mosquito_spray.png', 'put_ice.png', 'visit_doctor.png'] },
+            { id: 3, name: 'Sneeze', img: 'sneeze.png', should: ['tissure.png', 'cover_mouth.png', 'visit_doctor.png', 'nosal_spray.png'] },
+            { id: 4, name: 'Broken Leg', img: 'broken_leg.png', should: ['visit_doctor.png', 'go_to_bed.png', 'talk_on_the_phone.png'] },
+            { id: 5, name: 'Toothache', img: 'toothache.png', should: ['8FB64287-406C-4CA5-B5DC-6CA02CC29743.png', 'clean_teeth.png', 'pain_killer.png', 'visit_doctor.png'] },
+            { id: 6, name: 'Stomachache', img: 'stomachache.png', should: ['water.png', '4.jpg', 'visit_doctor.png'] },
+            { id: 7, name: 'Cough', img: 'cough.png', should: ['syrup.png', 'hot_milk_honey.png', 'cover_mouth.png', 'visit_doctor.png'] },
+            { id: 8, name: 'Bump', img: 'bump.png', should: ['put_ice.png', 'ointment.jpg', 'put_plaster.png'] },
+            { id: 9, name: 'Earache', img: 'earache.png', should: ['eardrop.png', 'pain_killer.png', 'visit_doctor.png', 'wear_hat.png'] },
+            { id: 10, name: 'Blocked Nose', img: 'blocked_nose.png', should: ['nosal_spray.png', 'hot_tea.png', 'visit_doctor.png'] },
+            { id: 11, name: 'Sore Throat', img: 'sore_throat.png', should: ['syrup.png', 'hot_tea.png', 'hot_milk_honey.png', 'visit_doctor.png'] },
+            { id: 12, name: 'Temperature', img: 'temperature.png', should: ['pain_killer.png', 'go_to_bed.png', 'water.png', 'visit_doctor.png', 'wear_hat.png'] },
+            { id: 13, name: 'Cold', img: 'cold.png', should: ['go_to_bed.png', 'hot_tea.png', 'tissure.png', '4.jpg', 'visit_doctor.png', 'wear_hat.png', 'nosal_spray.png'] },
+            { id: 14, name: 'Cut', img: 'cut.png', should: ['put_plaster.png', 'first_and_kit.jpg', 'ointment.jpg'] },
+            { id: 15, name: 'Headache', img: 'headache.png', should: ['pain_killer.png', 'go_to_bed.png', 'water.png', 'park.jpg', 'visit_doctor.png'] },
+            { id: 16, name: 'Burn', img: 'burn.png', should: ['put_ice.png', 'ointment.jpg', 'visit_doctor.png'] }
+        ];
+
+        const adviceCardsList = [
+            { img: 'park.jpg', text: 'go to the park' }, { img: 'ointment.jpg', text: 'use some ointment' },
+            { img: 'eardrop.png', text: 'use ear drops' }, { img: 'first_and_kit.jpg', text: 'use a first aid kit' },
+            { img: '4.jpg', text: 'take your medicine' }, { img: 'hot_tea.png', text: 'drink hot tea' },
+            { img: '8FB64287-406C-4CA5-B5DC-6CA02CC29743.png', text: 'visit a dentist' }, { img: 'sweets.png', text: 'not eat sweets' },
+            { img: 'fastfood.png', text: 'not eat fast food' }, { img: 'mosquito_spray.png', text: 'use mosquito spray' },
+            { img: 'play_computer.png', text: 'not play computer games' }, { img: 'wear_hat.png', text: 'wear a hat' },
+            { img: 'visit_doctor.png', text: 'visit a doctor' }, { img: 'wash_food.png', text: 'wash fruit and vegetables' },
+            { img: 'wash_hands.png', text: 'wash your hands' }, { img: 'do_sports.png', text: 'do sports' },
+            { img: 'clean_teeth.png', text: 'clean your teeth' }, { img: 'cover_mouth.png', text: 'cover your mouth' },
+            { img: 'go_to_bed.png', text: 'go to bed early' }, { img: 'put_plaster.png', text: 'put a plaster on it' },
+            { img: 'put_ice.png', text: 'put some ice on it' }, { img: 'nosal_spray.png', text: 'use nasal spray' },
+            { img: 'pain_killer.png', text: 'take a painkiller' }, { img: 'syrup.png', text: 'take some syrup' },
+            { img: 'hot_milk_honey.png', text: 'drink hot milk with honey' }, { img: 'tissure.png', text: 'use a tissue' },
+            { img: 'water.png', text: 'drink water' }
+        ];
+
+        let selectedIllnesses = [];
+        let currentIndex = 0;
+        let lives = 3;
+        let hints = 3;
+        let foundAdvices = [];
+
+        window.onload = () => {
+            selectedIllnesses = [...healthDatabase].sort(() => 0.5 - Math.random()).slice(0, 7);
+            startRound();
+        };
+
+        function startRound() {
+            if (currentIndex >= selectedIllnesses.length) {
+                showEndScreen(true);
+                return;
+            }
+            // Сброс данных и обновление ресурсов для нового раунда
+            foundAdvices = [];
+            lives = 3;  // Жизни обновляются
+            hints = 3;  // Подсказки обновляются
+            updateStatus();
+            
+            const ill = selectedIllnesses[currentIndex];
+            document.getElementById('illness-img').src = `img/${ill.img}`;
+            document.getElementById('illness-img').onerror = function() { this.src = `https://placehold.co/200x250?text=${ill.name}`; };
+            document.getElementById('round-info').innerText = `Patient ${currentIndex + 1} of 7`;
+            
+            updateAdviceCounter();
+            renderAdviceGrid();
+        }
+
+        function updateAdviceCounter() {
+            const currentIll = selectedIllnesses[currentIndex];
+            document.getElementById('advice-counter').innerText = `${foundAdvices.length} / ${currentIll.should.length}`;
+        }
+
+        function renderAdviceGrid() {
+            const grid = document.getElementById('advice-grid');
+            grid.innerHTML = '';
+            adviceCardsList.forEach(card => {
+                const el = document.createElement('div');
+                el.className = "advice-card bg-white p-2 rounded-2xl border-4 border-slate-100 flex items-center justify-center shadow-sm";
+                el.dataset.img = card.img;
+                el.innerHTML = `<img src="img/${card.img}" class="w-full h-auto rounded-xl" onerror="this.src='https://placehold.co/80x100?text=Advice'">`;
+                el.onclick = () => checkAdvice(card, el);
+                grid.appendChild(el);
+            });
+        }
+
+        function checkAdvice(card, el) {
+            const currentIll = selectedIllnesses[currentIndex];
+            if (currentIll.should.includes(card.img)) {
+                if (!foundAdvices.includes(card.img)) {
+                    foundAdvices.push(card.img);
+                    el.classList.add('correct');
+                    speak(`You should ${card.text}`);
+                    updateAdviceCounter();
+                    
+                    if (foundAdvices.length === currentIll.should.length) {
+                        setTimeout(() => {
+                            currentIndex++;
+                            startRound();
+                        }, 1000);
+                    }
+                }
+            } else {
+                lives--;
+                updateStatus();
+                el.classList.add('wrong');
+                setTimeout(() => el.classList.remove('wrong'), 400);
+                if (lives <= 0) showEndScreen(false);
+            }
+        }
+
+        function useHint() {
+            if (hints > 0) {
+                const currentIll = selectedIllnesses[currentIndex];
+                const needed = currentIll.should.find(img => !foundAdvices.includes(img));
+                if (needed) {
+                    hints--;
+                    updateStatus();
+                    const cards = document.querySelectorAll('.advice-card');
+                    cards.forEach(c => {
+                        if (c.dataset.img === needed) {
+                            c.classList.add('hint-active');
+                            setTimeout(() => c.classList.remove('hint-active'), 2000);
+                        }
+                    });
+                }
+            }
+        }
+
+        function updateStatus() {
+            document.getElementById('lives-count').innerHTML = '❤️'.repeat(lives);
+            document.getElementById('hints-count').innerText = hints;
+        }
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US';
+            window.speechSynthesis.speak(u);
+        }
+
+        function showEndScreen(win) {
+            const screen = document.getElementById('end-screen');
+            screen.classList.remove('hidden');
+            document.getElementById('end-title').innerText = win ? "Great Job, Doctor!" : "Game Over!";
+            document.getElementById('end-msg').innerText = win ? "You helped all patients." : "Try again to save patients!";
+        }
+    </script>
+
+    <div class="max-w-5xl w-full flex flex-col gap-6">
+        <header class="flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm border-2 border-slate-50">
+            <div id="lives-count" class="text-2xl min-w-[80px]">❤️❤️❤️</div>
+            <div id="round-info" class="font-black text-slate-400 uppercase tracking-widest text-sm">Patient 1 of 7</div>
+            <button onclick="useHint()" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-6 py-2 rounded-2xl font-bold transition-all shadow-lg shadow-yellow-100">
+                <span>💡 Hint</span>
+                <span id="hints-count" class="bg-yellow-900/10 px-2 rounded-lg">3</span>
+            </button>
+        </header>
+
+        <div class="flex flex-col md:flex-row gap-6">
+            <div class="md:w-1/3 bg-white p-8 rounded-[3rem] shadow-sm flex flex-col items-center border-4 border-blue-50">
+                <h2 class="text-blue-500 font-black uppercase text-xs tracking-widest mb-4">Current Patient</h2>
+                <div class="w-full aspect-[3/4] bg-slate-50 rounded-3xl overflow-hidden shadow-inner flex items-center justify-center mb-4">
+                    <img id="illness-img" src="" class="max-w-full max-h-full object-contain">
+                </div>
+                <!-- Счетчик необходимых советов -->
+                <div class="flex flex-col items-center gap-1">
+                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-tighter">Advices Needed</span>
+                    <div id="advice-counter" class="counter-badge">0 / 0</div>
+                </div>
+            </div>
+
+            <div class="md:w-2/3 bg-slate-200/50 p-6 rounded-[3rem] shadow-inner">
+                <h2 class="text-slate-400 font-black uppercase text-xs tracking-widest mb-4 ml-4">What should they do?</h2>
+                <div id="advice-grid" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-10">
+        <a href="index.html" class="flex items-center gap-2 px-8 py-3 bg-slate-800 text-white rounded-full font-bold shadow-xl hover:bg-slate-900">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Main Menu
+        </a>
+    </div>
+
+    <div id="end-screen" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center z-50 hidden p-6">
+        <div class="bg-white p-12 rounded-[4rem] text-center max-w-sm w-full shadow-2xl border-8 border-white">
+            <h2 id="end-title" class="text-4xl font-black text-slate-800 mb-2"></h2>
+            <p id="end-msg" class="text-slate-500 mb-8 font-medium"></p>
+            <button onclick="location.reload()" class="w-full bg-blue-600 text-white py-5 rounded-3xl font-black text-xl hover:scale-105 active:scale-95 transition-all">Play Again</button>
+        </div>
+    </div>
+
+</body>
+</html>

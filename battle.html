@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Battle: Guess the Illness</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card-glow { transition: all 0.3s ease; }
+        .card-glow:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .overlay { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px); }
+        .chat-bubble { position: relative; border-radius: 20px; padding: 12px 20px; margin: 8px 0; max-width: 85%; }
+        .bubble-ai { background: #fee2e2; color: #991b1b; align-self: flex-start; }
+        .bubble-player { background: #dbeafe; color: #1e40af; align-self: flex-end; }
+        .heart-active { color: #ef4444; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
+        .heart-lost { color: #cbd5e1; }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col items-center">
+
+    <script>
+        const healthDatabase = [
+            { id: 1, name: 'Running Nose', img: 'running_nose.png', should: ['nosal_spray.png', 'tissure.png', 'water.png'] },
+            { id: 2, name: 'Rash', img: 'rash_mosqiuto_bites.png', should: ['ointment.jpg', 'mosquito_spray.png', 'put_ice.png', 'visit_doctor.png'] },
+            { id: 3, name: 'Sneeze', img: 'sneeze.png', should: ['tissure.png', 'cover_mouth.png', 'visit_doctor.png', 'nosal_spray.png'] },
+            { id: 4, name: 'Broken Leg', img: 'broken_leg.png', should: ['visit_doctor.png', 'go_to_bed.png', 'talk_on_the_phone.png'] },
+            { id: 5, name: 'Toothache', img: 'toothache.png', should: ['8FB64287-406C-4CA5-B5DC-6CA02CC29743.png', 'clean_teeth.png', 'pain_killer.png', 'visit_doctor.png'] },
+            { id: 6, name: 'Stomachache', img: 'stomachache.png', should: ['water.png', '4.jpg', 'visit_doctor.png'] },
+            { id: 7, name: 'Cough', img: 'cough.png', should: ['syrup.png', 'hot_milk_honey.png', 'cover_mouth.png', 'visit_doctor.png'] },
+            { id: 8, name: 'Bump', img: 'bump.png', should: ['put_ice.png', 'ointment.jpg', 'put_plaster.png'] },
+            { id: 9, name: 'Earache', img: 'earache.png', should: ['eardrop.png', 'pain_killer.png', 'visit_doctor.png', 'wear_hat.png'] },
+            { id: 10, name: 'Blocked Nose', img: 'blocked_nose.png', should: ['nosal_spray.png', 'hot_tea.png', 'visit_doctor.png'] },
+            { id: 11, name: 'Sore Throat', img: 'sore_throat.png', should: ['syrup.png', 'hot_tea.png', 'hot_milk_honey.png', 'visit_doctor.png'] },
+            { id: 12, name: 'Temperature', img: 'temperature.png', should: ['pain_killer.png', 'go_to_bed.png', 'water.png', 'visit_doctor.png', 'wear_hat.png'] },
+            { id: 13, name: 'Cold', img: 'cold.png', should: ['go_to_bed.png', 'hot_tea.png', 'tissure.png', '4.jpg', 'visit_doctor.png', 'wear_hat.png', 'nosal_spray.png'] },
+            { id: 14, name: 'Cut', img: 'cut.png', should: ['put_plaster.png', 'first_and_kit.jpg', 'ointment.jpg'] },
+            { id: 15, name: 'Headache', img: 'headache.png', should: ['pain_killer.png', 'go_to_bed.png', 'water.png', 'park.jpg', 'visit_doctor.png'] },
+            { id: 16, name: 'Burn', img: 'burn.png', should: ['put_ice.png', 'ointment.jpg', 'visit_doctor.png'] }
+        ];
+
+        const adviceInfo = {
+            'park.jpg': 'go to the park', 'ointment.jpg': 'use some ointment', 'eardrop.png': 'use ear drops',
+            'first_and_kit.jpg': 'use a first aid kit', '4.jpg': 'take my medicine', 'hot_tea.png': 'drink hot tea',
+            '8FB64287-406C-4CA5-B5DC-6CA02CC29743.png': 'visit a dentist', 'sweets.png': 'eat sweets',
+            'fastfood.png': 'eat fast food', 'mosquito_spray.png': 'use mosquito spray',
+            'play_computer.png': 'play computer games all day', 'wear_hat.png': 'wear a hat',
+            'visit_doctor.png': 'visit a doctor', 'wash_food.png': 'wash fruit and vegetables',
+            'wash_hands.png': 'wash my hands', 'do_sports.png': 'do sports',
+            'clean_teeth.png': 'clean my teeth', 'cover_mouth.png': 'cover my mouth',
+            'go_to_bed.png': 'go to bed early', 'put_plaster.png': 'put a plaster on it',
+            'put_ice.png': 'put some ice on it', 'nosal_spray.png': 'use nasal spray',
+            'pain_killer.png': 'take a painkiller', 'syrup.png': 'take some syrup',
+            'hot_milk_honey.png': 'drink hot milk with honey', 'tissure.png': 'use a tissue', 'water.png': 'drink water'
+        };
+
+        const adviceList = Object.keys(adviceInfo);
+        let playerSecret, aiSecret;
+        let isPlayerTurn = true;
+        let aiCandidates = [...healthDatabase];
+        let gameActive = true;
+        let playerLives = 3;
+
+        window.onload = initBattle;
+
+        function initBattle() {
+            playerSecret = healthDatabase[Math.floor(Math.random() * healthDatabase.length)];
+            aiSecret = healthDatabase[Math.floor(Math.random() * healthDatabase.length)];
+            
+            const playerCardImg = document.getElementById('player-card');
+            playerCardImg.src = `img/${playerSecret.img}`;
+            playerCardImg.onerror = function() { this.src = `https://placehold.co/150x200?text=${playerSecret.name}`; };
+            
+            renderAdviceQuestions();
+            renderGuessGrid();
+            updateHearts();
+            updateTurnUI();
+            addMessage("ai", "I have a secret illness. Ask me 'Should I...?' questions using cards!");
+        }
+
+        function updateHearts() {
+            const container = document.getElementById('player-lives');
+            container.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const heart = document.createElement('span');
+                heart.innerHTML = '❤️';
+                heart.className = `text-2xl transition-all ${i < playerLives ? 'heart-active' : 'heart-lost'}`;
+                container.appendChild(heart);
+            }
+        }
+
+        function updateTurnUI() {
+            if (!gameActive) return;
+            const status = document.getElementById('turn-status');
+            const indicator = document.getElementById('turn-indicator');
+            
+            if (isPlayerTurn) {
+                status.innerText = "Your Turn: Choose a Card";
+                indicator.className = "px-6 py-2 rounded-full bg-blue-500 text-white font-bold animate-pulse";
+            } else {
+                status.innerText = "AI is thinking...";
+                indicator.className = "px-6 py-2 rounded-full bg-red-500 text-white font-bold";
+                setTimeout(aiTurn, 2500); 
+            }
+        }
+
+        function renderAdviceQuestions() {
+            const grid = document.getElementById('questions-grid');
+            grid.innerHTML = '';
+            adviceList.forEach(img => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white p-1 rounded-lg border-2 border-slate-100 hover:border-blue-400 transition-all card-glow";
+                btn.innerHTML = `<img src="img/${img}" class="w-full h-auto rounded" onerror="this.src='https://placehold.co/80x100?text=Advice'">`;
+                btn.onclick = () => playerAsk(img);
+                grid.appendChild(btn);
+            });
+        }
+
+        function renderGuessGrid() {
+            const grid = document.getElementById('guess-grid');
+            grid.innerHTML = '';
+            healthDatabase.forEach(ill => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white p-1 rounded-lg border-2 border-slate-200 hover:border-green-400 transition-all";
+                btn.innerHTML = `<img src="img/${ill.img}" class="w-full h-auto rounded" title="${ill.name}" onerror="this.src='https://placehold.co/80x100?text=${ill.name}'">`;
+                btn.onclick = () => playerGuess(ill);
+                grid.appendChild(btn);
+            });
+        }
+
+        function addMessage(type, text) {
+            const container = document.getElementById('chat-container');
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${type === 'ai' ? 'bubble-ai' : 'bubble-player shadow-sm'}`;
+            bubble.innerText = text;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+            
+            if (gameActive) {
+                setTimeout(() => speak(text), 200);
+            }
+        }
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85; 
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function playerAsk(adviceImg) {
+            if (!isPlayerTurn || !gameActive) return;
+            isPlayerTurn = false;
+            
+            const question = `Should I ${adviceInfo[adviceImg]}?`;
+            addMessage("player", question);
+            
+            setTimeout(() => {
+                const isCorrect = aiSecret.should.includes(adviceImg);
+                const answer = isCorrect ? "Yes, you should!" : "No, you shouldn't.";
+                addMessage("ai", answer);
+                setTimeout(updateTurnUI, 2500); 
+            }, 3000);
+        }
+
+        function playerGuess(illness) {
+            if (!isPlayerTurn || !gameActive) return;
+            isPlayerTurn = false;
+            
+            addMessage("player", `Is it ${illness.name}?`);
+
+            setTimeout(() => {
+                if (illness.id === aiSecret.id) {
+                    addMessage("ai", "Yes! You found it! You won!");
+                    setTimeout(() => showEndScreen("victory"), 2500);
+                } else {
+                    playerLives--;
+                    updateHearts();
+                    if (playerLives <= 0) {
+                        addMessage("ai", `No, that's wrong. Game over!`);
+                        setTimeout(() => showEndScreen("defeat"), 2500);
+                    } else {
+                        addMessage("ai", `No, it's not. You have ${playerLives} tries left.`);
+                        setTimeout(updateTurnUI, 2500);
+                    }
+                }
+            }, 3000);
+        }
+
+        function aiTurn() {
+            if (!gameActive) return;
+
+            const winChance = Math.random();
+            if (winChance < 0.3 && aiCandidates.length < 5) {
+                const aiGuess = aiCandidates[Math.floor(Math.random() * aiCandidates.length)];
+                addMessage("ai", `Should I guess? Is it ${aiGuess.name}?`);
+                
+                setTimeout(() => {
+                    if (aiGuess.id === playerSecret.id) {
+                        addMessage("player", "Yes... You won.");
+                        setTimeout(() => showEndScreen("defeat"), 2500);
+                    } else {
+                        addMessage("player", "No, it's not.");
+                        aiCandidates = aiCandidates.filter(c => c.id !== aiGuess.id);
+                        setTimeout(() => { isPlayerTurn = true; updateTurnUI(); }, 2500);
+                    }
+                }, 3000);
+            } else {
+                const randomAdvice = adviceList[Math.floor(Math.random() * adviceList.length)];
+                addMessage("ai", `Should I ${adviceInfo[randomAdvice]}?`);
+                
+                setTimeout(() => {
+                    const isCorrect = playerSecret.should.includes(randomAdvice);
+                    const answer = isCorrect ? "Yes, you should." : "No, you shouldn't.";
+                    addMessage("player", answer);
+                    
+                    if (isCorrect) {
+                        aiCandidates = aiCandidates.filter(c => c.should.includes(randomAdvice));
+                    } else {
+                        aiCandidates = aiCandidates.filter(c => !c.should.includes(randomAdvice));
+                    }
+                    
+                    setTimeout(() => { isPlayerTurn = true; updateTurnUI(); }, 2500);
+                }, 3000);
+            }
+        }
+
+        function showEndScreen(result) {
+            gameActive = false;
+            const screen = document.getElementById('end-screen');
+            document.getElementById('end-title').innerText = result === 'victory' ? "Victory!" : "AI Won!";
+            document.getElementById('end-icon').innerText = result === 'victory' ? "🏆" : "🤖";
+            document.getElementById('reveal-ai').src = `img/${aiSecret.img}`;
+            screen.classList.remove('hidden');
+        }
+
+        function restart() { location.reload(); }
+    </script>
+
+    <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 mb-20">
+        <div class="lg:col-span-3 flex flex-col gap-6">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border-4 border-blue-50">
+                <h3 class="text-blue-500 font-black uppercase text-xs mb-2">My Patient</h3>
+                <div id="player-lives" class="flex gap-1 mb-4 justify-center"></div>
+                <div class="aspect-[3/4] bg-slate-50 rounded-2xl overflow-hidden mb-3">
+                    <img id="player-card" src="" class="w-full h-full object-contain">
+                </div>
+            </div>
+            <div class="bg-red-50 p-6 rounded-3xl border-4 border-red-100 flex flex-col items-center">
+                <h3 class="text-red-500 font-black uppercase text-xs mb-4">Enemy Patient</h3>
+                <div class="w-32 h-44 bg-red-100 rounded-2xl flex items-center justify-center text-4xl border-4 border-dashed border-red-200">❓</div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-6 flex flex-col gap-4">
+            <div class="flex justify-between items-center bg-white px-6 py-4 rounded-2xl shadow-sm">
+                <div id="turn-indicator" class="px-6 py-2 rounded-full font-bold">...</div>
+                <h2 id="turn-status" class="font-bold text-slate-700">Loading</h2>
+            </div>
+            <div id="chat-container" class="bg-white h-64 overflow-y-auto p-4 rounded-2xl shadow-inner flex flex-col gap-2 border border-slate-100"></div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm">
+                <h3 class="text-slate-400 font-black uppercase text-xs mb-4">Ask: Should I...?</h3>
+                <div id="questions-grid" class="grid grid-cols-6 sm:grid-cols-9 gap-2"></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-3">
+            <div class="bg-white p-6 rounded-3xl shadow-sm sticky top-4">
+                <h3 class="text-green-500 font-black uppercase text-xs mb-4">Guess the Disease</h3>
+                <div id="guess-grid" class="grid grid-cols-3 gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
+        <a href="index.html" class="px-10 py-4 bg-slate-800 text-white rounded-full font-bold shadow-2xl hover:bg-slate-900 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Main Menu
+        </a>
+    </div>
+
+    <div id="end-screen" class="fixed inset-0 overlay flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-white p-10 rounded-[3rem] shadow-2xl text-center border-8 max-w-md w-full">
+            <div id="end-icon" class="text-7xl mb-4"></div>
+            <h2 id="end-title" class="text-4xl font-black mb-4"></h2>
+            <div class="bg-slate-50 p-6 rounded-2xl mb-8 border border-slate-100">
+                <p class="text-slate-400 text-xs font-bold uppercase mb-2">AI Patient was:</p>
+                <img id="reveal-ai" src="" class="w-32 h-auto mx-auto rounded-xl">
+            </div>
+            <button onclick="restart()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xl">Play Again</button>
+        </div>
+    </div>
+</body>
+</html>
